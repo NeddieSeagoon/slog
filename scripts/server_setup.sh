@@ -56,7 +56,7 @@ python3.11 -m pip install --upgrade pip
 python3.11 -m pip install -r requirements.txt
 
 echo "Initializing database tables..."
-python3.11 app.py --init-db
+python3.11 db_init.py
 
 # to automatically start the server, uncomment:
 # uvicorn app:app --host 0.0.0.0 --port 8000

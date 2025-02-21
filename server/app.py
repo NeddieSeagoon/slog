@@ -30,6 +30,5 @@ def notify_discord_bot(event_data):
     if loop is not None:
         asyncio.run_coroutine_threadsafe(bot.handle_new_event(event_data), loop)
 
-
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=False)
