@@ -17,7 +17,7 @@ echo "deb [signed-by=/etc/apt/keyrings/postgresql.asc] http://apt.postgresql.org
 sudo add-apt-repository ppa:deadsnakes/ppa -y
 
 sudo apt update
-sudo apt install -y postgresql software-properties-common python3.13 python3.13-venv python3.13-dev -y
+sudo apt install -y postgresql software-properties-common python3.11 python3.11-venv python3.11-dev libpq-dev -y
 
 
 echo "Setting up PostgreSQL user and database..."
@@ -46,17 +46,17 @@ echo "PostgreSQL user/database created or already exists."
 
 cd ~/slog/server
 echo "Creating Python venv in $(pwd)/venv ..."
-python3.13 -m venv venv
+python3.11 -m venv venv
 
 echo "Activating virtual environment..."
 source venv/bin/activate
 
 echo "Installing Python dependencies..."
-pip install --upgrade pip
-pip install -r requirements.txt
+python3.11 -m pip install --upgrade pip
+python3.11 -m pip install -r requirements.txt
 
 echo "Initializing database tables..."
-python3.13 app.py --init-db
+python3.11 app.py --init-db
 
 # to automatically start the server, uncomment:
 # uvicorn app:app --host 0.0.0.0 --port 8000
