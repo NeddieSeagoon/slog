@@ -13,3 +13,6 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
 
 settings = Settings()
+
+if __name__ == "__main__":
+    print(settings.DATABASE_URL, settings.DISCORD_BOT_TOKEN)
