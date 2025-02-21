@@ -4,8 +4,7 @@
     and sends them to a FastAPI server as JSON. In debug mode, it also prints
     the JSON payload to a GUI window.
     
-    If the configured log file is not found, the script will launch a GUI
-    to allow the user to update the configuration.
+    The configuration GUI is always shown to update the configuration.
 #>
 
 param(
@@ -24,9 +23,13 @@ function Load-ClientConfig {
             log_file_path    = "C:\StarCitizen\Game.log"
             group_passphrase = "defaultgroup"
             debug_mode       = $false
+            send_events      = $true
         }
         $defaultConfig | ConvertTo-Json | Out-File $ConfigFilePath
         $config = $defaultConfig
+    }
+    if (-not $config.PSObject.Properties.Name -contains "send_events") {
+        $config | Add-Member -MemberType NoteProperty -Name send_events -Value $true
     }
     return $config
 }
@@ -39,7 +42,7 @@ function Show-ConfigurationGUI {
 
     $form = New-Object System.Windows.Forms.Form
     $form.Text = "Update Log Parser Configuration"
-    $form.Size = New-Object System.Drawing.Size(500,400)
+    $form.Size = New-Object System.Drawing.Size(500,450)
     $form.StartPosition = "CenterScreen"
 
     # Error message label (in red)
@@ -62,22 +65,44 @@ function Show-ConfigurationGUI {
     $txtServerUrl.Size = New-Object System.Drawing.Size(350,20)
     $txtServerUrl.Text = $config.server_url
     $form.Controls.Add($txtServerUrl)
-    
+
+    # Server URL status indicator (circle) and label
+    $panelServerIndicator = New-Object System.Windows.Forms.Panel
+    $panelServerIndicator.Location = New-Object System.Drawing.Point(120,65)
+    $panelServerIndicator.Size = New-Object System.Drawing.Size(15,15)
+    $gp = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $gp.AddEllipse(0,0,15,15)
+    $panelServerIndicator.Region = New-Object System.Drawing.Region($gp)
+    $panelServerIndicator.BackColor = [System.Drawing.Color]::Gray  # default color
+    # black outline
+    $panelServerIndicator.Add_Paint({
+        param($sender, $e)
+        $e.Graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+        $e.Graphics.DrawEllipse([System.Drawing.Pens]::Black, 0, 0, $sender.Width - 1, $sender.Height - 1)
+    })
+    $form.Controls.Add($panelServerIndicator)
+
+    $lblServerStatus = New-Object System.Windows.Forms.Label
+    $lblServerStatus.Location = New-Object System.Drawing.Point(140,65)
+    $lblServerStatus.Size = New-Object System.Drawing.Size(150,15)
+    $lblServerStatus.Text = ""
+    $form.Controls.Add($lblServerStatus)
+
     # Log File Path
     $lblLogFile = New-Object System.Windows.Forms.Label
-    $lblLogFile.Location = New-Object System.Drawing.Point(10,80)
+    $lblLogFile.Location = New-Object System.Drawing.Point(10,100)
     $lblLogFile.Size = New-Object System.Drawing.Size(100,20)
     $lblLogFile.Text = "Log File Path:"
     $form.Controls.Add($lblLogFile)
     
     $txtLogFilePath = New-Object System.Windows.Forms.TextBox
-    $txtLogFilePath.Location = New-Object System.Drawing.Point(120,80)
+    $txtLogFilePath.Location = New-Object System.Drawing.Point(120,100)
     $txtLogFilePath.Size = New-Object System.Drawing.Size(300,20)
     $txtLogFilePath.Text = $config.log_file_path
     $form.Controls.Add($txtLogFilePath)
     
     $btnBrowse = New-Object System.Windows.Forms.Button
-    $btnBrowse.Location = New-Object System.Drawing.Point(430,80)
+    $btnBrowse.Location = New-Object System.Drawing.Point(430,100)
     $btnBrowse.Size = New-Object System.Drawing.Size(40,20)
     $btnBrowse.Text = "..."
     $btnBrowse.Add_Click({
@@ -88,27 +113,58 @@ function Show-ConfigurationGUI {
         }
     })
     $form.Controls.Add($btnBrowse)
-    
+
+    # Log File status indicator (circle) and label
+    $panelLogIndicator = New-Object System.Windows.Forms.Panel
+    $panelLogIndicator.Location = New-Object System.Drawing.Point(120,125)
+    $panelLogIndicator.Size = New-Object System.Drawing.Size(15,15)
+    $gp2 = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $gp2.AddEllipse(0,0,15,15)
+    $panelLogIndicator.Region = New-Object System.Drawing.Region($gp2)
+    $panelLogIndicator.BackColor = [System.Drawing.Color]::Gray  # default color
+    # black outline
+    $panelLogIndicator.Add_Paint({
+        param($sender, $e)
+        $e.Graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
+        $e.Graphics.DrawEllipse([System.Drawing.Pens]::Black, 0, 0, $sender.Width - 1, $sender.Height - 1)
+    })
+    $form.Controls.Add($panelLogIndicator)
+
+    $lblLogStatus = New-Object System.Windows.Forms.Label
+    $lblLogStatus.Location = New-Object System.Drawing.Point(140,125)
+    $lblLogStatus.Size = New-Object System.Drawing.Size(150,15)
+    $lblLogStatus.Text = ""
+    $form.Controls.Add($lblLogStatus)
+
     # Group Passphrase
     $lblPassphrase = New-Object System.Windows.Forms.Label
-    $lblPassphrase.Location = New-Object System.Drawing.Point(10,120)
-    $lblPassphrase.Size = New-Object System.Drawing.Size(100,20)
-    $lblPassphrase.Text = "Group Passphrase:"
+    $lblPassphrase.Location = New-Object System.Drawing.Point(10,160)
+    $lblPassphrase.Size = New-Object System.Drawing.Size(100,40)
+    $lblPassphrase.Text = "Group Password:"
     $form.Controls.Add($lblPassphrase)
     
     $txtPassphrase = New-Object System.Windows.Forms.TextBox
-    $txtPassphrase.Location = New-Object System.Drawing.Point(120,120)
+    $txtPassphrase.Location = New-Object System.Drawing.Point(120,160)
     $txtPassphrase.Size = New-Object System.Drawing.Size(350,20)
     $txtPassphrase.Text = $config.group_passphrase
     $form.Controls.Add($txtPassphrase)
     
     # Debug Mode checkbox
     $chkDebugMode = New-Object System.Windows.Forms.CheckBox
-    $chkDebugMode.Location = New-Object System.Drawing.Point(120,160)
+    $chkDebugMode.Location = New-Object System.Drawing.Point(120,200)
     $chkDebugMode.Size = New-Object System.Drawing.Size(150,20)
     $chkDebugMode.Text = "Enable Debug Mode"
     $chkDebugMode.Checked = $config.debug_mode
     $form.Controls.Add($chkDebugMode)
+
+    # Send events to server checkbox
+    $chkSendEvents = New-Object System.Windows.Forms.CheckBox
+    $chkSendEvents.Location = New-Object System.Drawing.Point(300,200)
+    $chkSendEvents.Size = New-Object System.Drawing.Size(150,40)
+    $chkSendEvents.Text = "Send events to server (online mode)"
+    $chkSendEvents.Checked = $config.send_events
+    $chkSendEvents.Checked = $true   # Always checked by default
+    $form.Controls.Add($chkSendEvents)
     
     # Function to save updated config
     $SaveConfig = {
@@ -116,42 +172,91 @@ function Show-ConfigurationGUI {
         $config.log_file_path    = $txtLogFilePath.Text
         $config.group_passphrase = $txtPassphrase.Text
         $config.debug_mode       = $chkDebugMode.Checked
+        $config.send_events      = $chkSendEvents.Checked
         $config | ConvertTo-Json | Out-File $ConfigFilePath
     }
 
-    # Auto-save on change for all controls
-    $txtServerUrl.Add_TextChanged({ & $SaveConfig })
-    $txtLogFilePath.Add_TextChanged({
-        & $SaveConfig
-        if (-not (Test-Path $txtLogFilePath.Text)) {
-            $lblError.Text = "Log file not found. Please enter a valid path."
+    # Functions to update status indicators
+    function Update-ServerStatusIndicator {
+        $url = $txtServerUrl.Text
+        try {
+            $response = Invoke-WebRequest -Uri $url -Method Head -TimeoutSec 3 -ErrorAction Stop
+            if ($response.StatusCode -eq 200) {
+                $panelServerIndicator.BackColor = [System.Drawing.Color]::Green
+                $lblServerStatus.Text = "server online"
+            }
+            else {
+                $panelServerIndicator.BackColor = [System.Drawing.Color]::Red
+                $lblServerStatus.Text = "incorrect server address"
+            }
+        }
+        catch {
+            if ($_.Exception.Message -match "timed out") {
+                $panelServerIndicator.BackColor = [System.Drawing.Color]::Yellow
+                $lblServerStatus.Text = "server offline"
+            }
+            else {
+                $panelServerIndicator.BackColor = [System.Drawing.Color]::Red
+                $lblServerStatus.Text = "incorrect server address"
+            }
+        }
+    }
+
+    function Update-LogFileStatusIndicator {
+        $path = $txtLogFilePath.Text
+        if (Test-Path $path) {
+            $fileInfo = Get-Item $path
+            if ((Get-Date) - $fileInfo.LastWriteTime -lt (New-TimeSpan -Seconds 60)) {
+                $panelLogIndicator.BackColor = [System.Drawing.Color]::Green
+                $lblLogStatus.Text = "log active"
+            }
+            else {
+                $panelLogIndicator.BackColor = [System.Drawing.Color]::Yellow
+                $lblLogStatus.Text = "log inactive"
+            }
         }
         else {
-            $lblError.Text = ""
+            $panelLogIndicator.BackColor = [System.Drawing.Color]::Red
+            $lblLogStatus.Text = "incorrect path"
         }
+    }
+
+    # Auto-save on change for all controls and update status indicators
+    $txtServerUrl.Add_TextChanged({
+        & $SaveConfig
+        Update-ServerStatusIndicator
+    })
+    $txtLogFilePath.Add_TextChanged({
+        & $SaveConfig
+        Update-LogFileStatusIndicator
     })
     $txtPassphrase.Add_TextChanged({ & $SaveConfig })
     $chkDebugMode.Add_CheckedChanged({ & $SaveConfig })
+    $chkSendEvents.Add_CheckedChanged({ & $SaveConfig })
 
-    # Check on load if the log file path is valid so the error message is shown immediately.
-    if (-not (Test-Path $txtLogFilePath.Text)) {
-        $lblError.Text = "Log file not found. Please enter a valid path."
-    }
-    
+    # Initial status update on load
+    Update-ServerStatusIndicator
+    Update-LogFileStatusIndicator
+
     # Close button to exit GUI
     $btnClose = New-Object System.Windows.Forms.Button
-    $btnClose.Location = New-Object System.Drawing.Point(200,210)
+    $btnClose.Location = New-Object System.Drawing.Point(200,280)
     $btnClose.Size = New-Object System.Drawing.Size(100,30)
     $btnClose.Text = "Exit"
-    $btnClose.Add_Click({ $form.Close() })
+    $btnClose.Add_Click({
+        $form.Close()
+        $host.SetShouldExit(0)
+    })       
     $form.Controls.Add($btnClose)
     
     [void]$form.ShowDialog()
 }
 
-# Load configuration
-$config = Load-ClientConfig
+# Always display the configuration GUI
+Show-ConfigurationGUI
 
+# Reload configuration after GUI is closed.
+$config = Load-ClientConfig
 $serverUrl       = $config.server_url
 $logFilePath     = $config.log_file_path
 $groupPassphrase = $config.group_passphrase
@@ -162,17 +267,9 @@ Write-Host "Log file path: $logFilePath"
 Write-Host "Group passphrase: $groupPassphrase"
 Write-Host "Debug mode: $debugMode"
 
-# If the log file is not found, launch the configuration GUI so the user can update the path.
+# Proceed with the rest of the script regardless of the log file's existence.
 if (-not (Test-Path $logFilePath)) {
-    Write-Host "Log file not found. Launching configuration GUI..."
-    Show-ConfigurationGUI
-    # Reload configuration after GUI is closed.
-    $config = Load-ClientConfig
-    $logFilePath = $config.log_file_path
-    if (-not (Test-Path $logFilePath)) {
-        Write-Host "Log file still not found. Exiting."
-        exit
-    }
+    Write-Host "Warning: Log file not found. Continuing..."
 }
 
 # If debug mode is enabled, create a debug output window.
@@ -197,9 +294,12 @@ $RegexVehicleDestruction = "Vehicle\s+(?<vehicle>\S+)\s+destroyed\s+by\s+(?<play
 $RegexZoneChange         = "Player\s+(?<player>\w+)\s+entered\s+zone\s+(?<zone>\w+)"
 
 function Send-EventToServer($eventObject) {
+    if (-not $config.send_events) {
+        Write-Host "Send events disabled in configuration."
+        return
+    }
     $jsonBody = $eventObject | ConvertTo-Json -Depth 10
 
-    # If debug mode is on, print the JSON payload in the debug window.
     if ($debugMode -and $txtDebug) {
         $txtDebug.AppendText("DEBUG: $jsonBody`r`n")
         [System.Windows.Forms.Application]::DoEvents()

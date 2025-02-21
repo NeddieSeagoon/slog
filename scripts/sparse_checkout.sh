@@ -24,6 +24,7 @@ git config core.sparseCheckout true
 echo "server/*" >> .git/info/sparse-checkout
 echo "scripts/*" >> .git/info/sparse-checkout
 
-git pull origin "$BRANCH_NAME"
+git fetch origin "$BRANCH_NAME"
 
+git checkout -b "$BRANCH_NAME" --track "origin/$BRANCH_NAME"
 echo "Sparse checkout complete. Pulled server/ and scripts/ dirs."
