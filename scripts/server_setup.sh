@@ -46,7 +46,7 @@ echo "PostgreSQL user/database created or already exists."
 
 cd ~/slog/server
 echo "Creating Python venv in $(pwd)/venv ..."
-python3 -m venv venv
+python3.13 -m venv venv
 
 echo "Activating virtual environment..."
 source venv/bin/activate
@@ -56,7 +56,7 @@ pip install --upgrade pip
 pip install -r requirements.txt
 
 echo "Initializing database tables..."
-python app.py --init-db
+python3.13 app.py --init-db
 
 # to automatically start the server, uncomment:
 # uvicorn app:app --host 0.0.0.0 --port 8000
