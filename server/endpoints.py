@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from database import SessionLocal
 from events_processor import process_incoming_event
-from websocket_manager import ConnectionManager
+from websocket_friend import ConnectionManager
 
 router = APIRouter()
 ws_manager = ConnectionManager()
