@@ -1,6 +1,3 @@
-"""
-Defines FastAPI endpoints for receiving events (/event) and WebSocket connections (/ws).
-"""
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import Any, Dict
 from sqlalchemy.orm import Session
@@ -8,6 +5,9 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from events_processor import process_incoming_event
 from websocket_friend import ConnectionManager
+
+# If you want to notify the Discord bot directly:
+from app import notify_discord_bot
 
 router = APIRouter()
 ws_manager = ConnectionManager()
@@ -20,23 +20,27 @@ async def post_event(data: Dict[str, Any]):
     finally:
         db.close()
 
-    event_dict = {
+    # event.raw_data holds *all* attributes from slog.ps1.
+    # We make a copy to avoid mutating the original.
+    event_dict = dict(event.raw_data or {})
+
+    # Override or set top-level fields to keep them consistent:
+    event_dict.update({
         "event_type": event.event_type,
         "timestamp": event.timestamp.isoformat(),
+        "group": event.group,
         "player": event.player,
         "killer": event.killer,
         "victim": event.victim,
         "vehicle": event.vehicle,
         "zone": event.zone,
-        "group": event.group
-    }
+    })
 
     # Broadcast to WebSocket subscribers
     await ws_manager.send_event_to_subscribers(event_dict)
 
-    # If you want to notify the discord bot for each event, import and call notify function:
-    # from app import notify_discord_bot
-    # notify_discord_bot(event_dict)
+    # Notify the Discord bot as well (if desired):
+    notify_discord_bot(event_dict)
 
     return {"status": "ok"}
 

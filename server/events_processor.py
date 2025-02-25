@@ -30,7 +30,9 @@ def process_incoming_event(db: Session, event_data: dict) -> Event:
         player=player,
         vehicle=vehicle,
         zone=zone,
-        group=group
+        group=group,
+        raw_data=event_data
+
     )
 
     db.add(new_event)

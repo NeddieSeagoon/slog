@@ -25,6 +25,7 @@ async def startup_event():
 async def shutdown_event():
     print("Shutting down application...")
     # Graceful shutdown logic if needed
+    asyncio.create_task(bot.close())
 
 def notify_discord_bot(event_data):
     if loop is not None:
