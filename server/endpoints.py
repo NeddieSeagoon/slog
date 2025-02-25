@@ -1,4 +1,4 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
 from typing import Any, Dict
 from sqlalchemy.orm import Session
 
@@ -13,7 +13,10 @@ router = APIRouter()
 ws_manager = ConnectionManager()
 
 @router.post("/event")
-async def post_event(data: Dict[str, Any]):
+async def post_event(request: Request, data: Dict[str, Any]):
+    client_ip = request.client.host
+    data["ip_address"] = client_ip
+
     db: Session = SessionLocal()
     try:
         event = process_incoming_event(db, data)
